@@ -47,7 +47,7 @@ typedef struct {
 #endif
 
 #ifndef VEC_INIT_CAP
-#    define VEC_INIT_CAP 1
+#    define VEC_INIT_CAP 16
 #endif
 _VEC_ASSERT(VEC_INIT_CAP > 0 & VEC_INIT_CAP == (int)VEC_INIT_CAP,
             "VEC_INIT_CAP must be a positive integer");
