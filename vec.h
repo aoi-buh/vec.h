@@ -440,7 +440,7 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
 #define vec_multi_sort_unstable_by(arr, len, cmp)                       \
     ({  bool success = false;                                           \
         if ((len) > 1) {                                                \
-            size_t *stack = vec_with_capacity(size_t, (len) * 2);       \
+            size_t *stack = vec_with_capacity(size_t, ceil(log2(len)) * 2 * 5); \
             if (stack) {                                                \
                 vec_push(stack, 0);                                     \
                 vec_push(stack, (len) - 1);                             \
@@ -482,7 +482,7 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
 #define vec_multi_sort_unstable_by_key(arr, len, key)                   \
     ({  bool success = false;                                           \
         if ((len) > 1) {                                                \
-            size_t *stack = vec_with_capacity(size_t, (len) * 2);       \
+            size_t *stack = vec_with_capacity(size_t, ceil(log2(len)) * 2 * 5); \
             typeof(key(*(arr))) *keys = vec_map((arr), key);            \
                                                                         \
             if ((uintptr_t) stack & (uintptr_t) keys) {                 \
