@@ -547,5 +547,5 @@ int main() {
     }
     vec_free(vec);
 
-    printf("\x1b[32m" "all tests successful");
+    printf("\x1b[32m" "all tests successful\n");
 }
