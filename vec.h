@@ -71,7 +71,7 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
 #define _VEC_ARR_LEN(arr) (sizeof(arr)/sizeof(*(arr)))
 #define _VEC_IF_REALLOC(cond1, cond2, expr) ((cond1)? ((cond2) && ((expr), true)) : ((expr), true))
 #define _VEC_UNWRAP(x) x
-#define _VEC_LESS_THAN(a, b) ((a) < (b))
+#define _VEC_LE(a, b) ((a) <= (b))
 #define _VEC_DEFAULT_CMP(a, b) ((a) - (b))
 #define _VEC_SWAP(a, b) ({ __auto_type tmp = a; a = b; b = tmp; })
 #define _VEC_SWAP_WITH_KEY(arr, keys, i, j)     \
@@ -355,7 +355,7 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
         do vec_i = (arr)[--(VEC_idx[1])]; while (VEC_idx[1] != SIZE_MAX && ((intmax_t) (body) == 0)); \
         VEC_idx[1]+1;  })
 
-#define vec_sort(self) vec_sort_by((self), _VEC_LESS_THAN)
+#define vec_sort(self) vec_sort_by((self), _VEC_LE)
 #define vec_sort_by(self, cmp)                      \
     (vec_multi_sort_by((self), vec_len(self), cmp)  \
      || (vec_err(self) = VEC_ALLOC_ERR, false))
@@ -385,10 +385,11 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
             vec_free(tmp);                                              \
             ok = true;                                                  \
         } ok; })
-#define vec_sort_by_key(self, key)                      \
-    (vec_multi_sort_by_key((self), vec_len(self), key)  \
+#define vec_sort_by_key(self, key) vec_msort((self), _VEC_LE, key)
+#define vec_msort(self, cmp, key)                           \
+    (vec_multi_sort_by_key((self), vec_len(self), cmp, key) \
      || (vec_err(self) = VEC_ALLOC_ERR, false))
-#define vec_multi_sort_by_key(arr, len, key)                            \
+#define vec_multi_sort_by_key(arr, len, cmp, key)                       \
     ({  bool success = false;                                           \
         typeof(arr) tmp = vec_with_capacity(typeof(*(arr)), (len));     \
         typeof(key(*(arr)))                                             \
@@ -406,7 +407,7 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
                     size_t l = left, r = mid, d = left;                 \
                                                                         \
                     while (l < mid & r < right)                         \
-                        if (ksrc[l] <= ksrc[r]) {                       \
+                        if (cmp(ksrc[l], ksrc[r])) {                    \
                             dst[d] = src[l];                            \
                             kdst[d++] = ksrc[l++];                      \
                         } else {                                        \
@@ -433,7 +434,7 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
         if (key2) vec_free(key2);                                       \
         success; })
 
-#define vec_sort_unstable(self) vec_sort_unstable_by((self), _VEC_LESS_THAN)
+#define vec_sort_unstable(self) vec_sort_unstable_by((self), _VEC_LE)
 #define vec_sort_unstable_by(self, cmp)                     \
     (vec_multi_sort_unstable_by((self), vec_len(self), cmp) \
      || (vec_err(self) = VEC_ALLOC_ERR, false))
@@ -449,9 +450,9 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
                     size_t low = vec_pop(stack);                        \
                     size_t mid = low + (high - low) / 2;                \
                                                                         \
-                    if (cmp((arr)[low], (arr)[mid])) _VEC_SWAP((arr)[low], (arr)[mid]); \
-                    if (cmp((arr)[high], (arr)[low])) _VEC_SWAP((arr)[high], (arr)[low]); \
-                    if (cmp((arr)[mid], (arr)[high])) _VEC_SWAP((arr)[mid], (arr)[high]); \
+                    if (cmp((arr)[mid], (arr)[low])) _VEC_SWAP((arr)[low], (arr)[mid]); \
+                    if (cmp((arr)[low], (arr)[high])) _VEC_SWAP((arr)[high], (arr)[low]); \
+                    if (cmp((arr)[high], (arr)[mid])) _VEC_SWAP((arr)[mid], (arr)[high]); \
                     _VEC_SWAP((arr)[mid], (arr)[high]);                 \
                     typeof(*(arr)) pivot = (arr)[high];                 \
                     size_t i = low;                                     \
@@ -475,11 +476,11 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
                 success = true;                                         \
             }                                                           \
         } success; })
-#define vec_sort_unstable_by_key(self, key)                     \
-    (vec_multi_sort_unstable_by_key((self), vec_len(self), key) \
+#define vec_sort_unstable_by_key(self, key) vec_qsort((self), _VEC_LE, key)
+#define vec_qsort(self, cmp, key)                                       \
+    (vec_multi_sort_unstable_by_key((self), vec_len(self), cmp, key)    \
      || (vec_err(self) = VEC_ALLOC_ERR, false))
-/* change vec_get(stack, -1) to stack[vec_len(stack)-1] later */
-#define vec_multi_sort_unstable_by_key(arr, len, key)                   \
+#define vec_multi_sort_unstable_by_key(arr, len, cmp, key)              \
     ({  bool success = false;                                           \
         if ((len) > 1) {                                                \
             size_t *stack = vec_with_capacity(size_t, ceil(log2(len)) * 2 * 5); \
@@ -493,15 +494,15 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
                     size_t low = vec_pop(stack);                        \
                     size_t mid = low + (high - low) / 2;                \
                                                                         \
-                    if ((keys)[low] > (keys)[mid]) _VEC_SWAP_WITH_KEY((arr), keys, low, mid); \
-                    if ((keys)[high] > (keys)[low]) _VEC_SWAP_WITH_KEY((arr), keys, high, low); \
-                    if ((keys)[mid] > (keys)[high]) _VEC_SWAP_WITH_KEY((arr), keys, mid, high); \
+                    if (cmp(keys[mid], keys[low])) _VEC_SWAP_WITH_KEY((arr), keys, low, mid); \
+                    if (cmp(keys[low], keys[high])) _VEC_SWAP_WITH_KEY((arr), keys, high, low); \
+                    if (cmp(keys[high], keys[mid])) _VEC_SWAP_WITH_KEY((arr), keys, mid, high); \
                     _VEC_SWAP_WITH_KEY((arr), keys, mid, high);         \
                     typeof(*keys) pivot = keys[high];                   \
                     size_t i = low;                                     \
                                                                         \
                     for (size_t j = low; j < high; j++)                 \
-                        if ((arr)[j] <= pivot) {                        \
+                        if (cmp((arr)[j], pivot)) {                     \
                             _VEC_SWAP_WITH_KEY((arr), keys, i, j);      \
                             i++;                                        \
                         }                                               \
@@ -520,6 +521,5 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
             if (stack) vec_free(stack);                                 \
             if (keys) vec_free(keys);                                   \
         } success; })
-
 
 #endif // VEC_H

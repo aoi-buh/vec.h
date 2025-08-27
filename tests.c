@@ -24,7 +24,8 @@
 
 
 int main() {
-    // the type of vec can be changed to test other types
+    // the type of vec can be changed to test other types \
+    (the sorting tests are only setup to work with type that can be directly compared with operators)
     int *vec;
     typeof(vec) _vec;
     typeof(*vec) arr[1000];
