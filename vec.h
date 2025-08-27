@@ -69,7 +69,7 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
 */
 // non vec functions
 #define _VEC_ARR_LEN(arr) (sizeof(arr)/sizeof(*(arr)))
-#define _VEC_IF_REALLOC(cond1, cond2, expr) ((cond1)? ((cond2) && (expr)) : (expr))
+#define _VEC_IF_REALLOC(cond1, cond2, expr) ((cond1)? ((cond2) && ((expr), true)) : ((expr), true))
 #define _VEC_UNWRAP(x) x
 #define _VEC_LESS_THAN(a, b) ((a) < (b))
 #define _VEC_DEFAULT_CMP(a, b) ((a) - (b))
