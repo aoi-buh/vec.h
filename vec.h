@@ -165,8 +165,8 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
 #define vec_truncate(self, n) (vec_len(self) >= (n) && (vec_len(self) = (n)))
 
 #define vec_get(self, i)                                                \
-    ((intmax_t)(i) < 0? _vec_get((self), vec_len(self)+(i)) : _vec_get((self), (i)))
-#define _vec_get(self, i)                                               \
+    ((intmax_t)(i) < 0? _VEC_GET((self), vec_len(self)+(i)) : _VEC_GET((self), (i)))
+#define _VEC_GET(self, i)                                               \
     (_VEC_VALID_INDEX((self), (i))? (self)[i] : (vec_err(self) = VEC_INDEX_OUT_OF_BOUNDS, 0))
 
 #define vec_reverse(self)                                           \
@@ -176,19 +176,19 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
             (self)[i] = (self)[j];                                  \
             (self)[j] = _item;  }})
 
-#define _vec_remove(self, i, body)                      \
+#define _VEC_REMOVE(self, i, body)                      \
     ((i) != vec_len(self)-1                             \
      ? (_VEC_VALID_INDEX((self), (i))                   \
         ? (body)                                        \
         : (vec_err(self) = VEC_INDEX_OUT_OF_BOUNDS), 0) \
      : (self)[--vec_len(self)])
 #define vec_swap_remove(self, i)                            \
-    _vec_remove((self), (i),                                \
+    _VEC_REMOVE((self), (i),                                \
                 ({  typeof(*(self)) _item = (self)[i];      \
                     (self)[i] = (self)[--vec_len(self)];    \
                     _item;  }))
 #define vec_remove(self, i)                                             \
-    _vec_remove((self), (i),                                            \
+    _VEC_REMOVE((self), (i),                                            \
                 ({  typeof(*(self)) _item = (self)[i];                  \
                     memmove((self)+i, (self)+i+1, vec_len(self)-(i+1)); \
                     vec_len(self)--;                                    \
@@ -256,43 +256,43 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
                     _vec;  })                                           \
             : NULL;  })
 #define vec_map(self, func)                                             \
-    ({  typeof(func(*(self))) *VEC_vec = vec_with_capacity(typeof(func(*(self))), vec_len(self)); \
-        VEC_vec                                                         \
-            ? ({    for (size_t VEC_i = 0; VEC_i < vec_len(self); VEC_i++) \
-                        VEC_vec[VEC_i] = func((self)[VEC_i]);           \
-                    vec_len(VEC_vec) = vec_len(self);                   \
-                    VEC_vec; })                                         \
+    ({  typeof(func(*(self))) *_vec_vec = vec_with_capacity(typeof(func(*(self))), vec_len(self)); \
+        _vec_vec                                                         \
+            ? ({    for (size_t _vec_i = 0; _vec_i < vec_len(self); _vec_i++) \
+                        _vec_vec[_vec_i] = func((self)[_vec_i]);           \
+                    vec_len(_vec_vec) = vec_len(self);                   \
+                    _vec_vec; })                                         \
             : NULL;  })
 #define vec_filter(self, func)                                          \
-    ({  typeof(self) VEC_vec = vec_with_capacity(typeof(*(self)), vec_len(self)); \
-        VEC_vec                                                         \
-            ? ({    for (size_t VEC_i = 0, j = 0; VEC_i < vec_len(self); VEC_i++) \
-                        if (func((self)[VEC_i])) VEC_vec[j++] = (self)[VEC_i]; \
-                    VEC_vec; })                                         \
+    ({  typeof(self) _vec_vec = vec_with_capacity(typeof(*(self)), vec_len(self)); \
+        _vec_vec                                                         \
+            ? ({    for (size_t _vec_i = 0, j = 0; _vec_i < vec_len(self); _vec_i++) \
+                        if (func((self)[_vec_i])) _vec_vec[j++] = (self)[_vec_i]; \
+                    _vec_vec; })                                         \
             : NULL;  })
 #define vec_reduce(self, func, init)                                    \
-    ({  __auto_type VEC_acc = init;                                     \
-        for (size_t VEC_i = 0; VEC_i < vec_len(self); VEC_i++) VEC_acc = func(VEC_acc, (self)[VEC_i]); \
-        VEC_acc;  })
+    ({  __auto_type _vec_acc = init;                                     \
+        for (size_t _vec_i = 0; _vec_i < vec_len(self); _vec_i++) _vec_acc = func(_vec_acc, (self)[_vec_i]); \
+        _vec_acc;  })
 #define vec_foreach(self, func)                                         \
-    ({  for (size_t VEC_i = 0; VEC_i < vec_len(self); VEC_i++) func((self)[VEC_i]);  })
+    ({  for (size_t _vec_i = 0; _vec_i < vec_len(self); _vec_i++) func((self)[_vec_i]);  })
 #define vec_find(self, func)                                            \
-    ({  size_t VEC_i = 0;                                               \
-        bool VEC_found = false;                                         \
-        for (; VEC_i < vec_len(self); VEC_i++) if (VEC_found = func((self)[VEC_i])) break; \
-        VEC_found                                                       \
-            ? VEC_i                                                     \
+    ({  size_t _vec_i = 0;                                               \
+        bool _vec_found = false;                                         \
+        for (; _vec_i < vec_len(self); _vec_i++) if (_vec_found = func((self)[_vec_i])) break; \
+        _vec_found                                                       \
+            ? _vec_i                                                     \
             : ((vec_err(self) = VEC_TARGET_NOT_FOUND), SIZE_MAX);  })
 #define vec_any(self, func)                                             \
-    ({  bool VEC_any = false;                                           \
-        for (size_t VEC_i = 0; !VEC_any & VEC_i < vec_len(self); VEC_i++) \
-            VEC_any = func((self)[VEC_i]);                              \
-        VEC_any;  })
+    ({  bool _vec_any = false;                                           \
+        for (size_t _vec_i = 0; !_vec_any & _vec_i < vec_len(self); _vec_i++) \
+            _vec_any = func((self)[_vec_i]);                              \
+        _vec_any;  })
 #define vec_all(self, func)                                             \
-    ({  bool VEC_all = true;                                            \
-        for (size_t VEC_i = 0; VEC_all & VEC_i < vec_len(self); VEC_i++) \
-            VEC_all = func((self)[VEC_i]);                              \
-        VEC_all;  })
+    ({  bool _vec_all = true;                                            \
+        for (size_t _vec_i = 0; _vec_all & _vec_i < vec_len(self); _vec_i++) \
+            _vec_all = func((self)[_vec_i]);                              \
+        _vec_all;  })
 
 // I don't think these are possible with different types
 #define vec_zip(self, other)
@@ -301,29 +301,29 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
 #define vec_take(self, n) vec_multi_new(self, n)
 #define vec_drop(self, n) vec_multi_new((self)+(n), vec_len(self)-(n))
 #define vec_take_while(self, func)                                      \
-    ({  typeof(self) VEC_vec = vec_new(typeof(*(self)), vec_len(self)); \
-        size_t VEC_i = 0;                                               \
-        for (; VEC_i < vec_len(self) && func((self)[VEC_i]); VEC_i++) VEC_vec[VEC_i] = (self)[VEC_i]; \
-        vec_len(VEC_vec) = VEC_i;                                       \
-        VEC_vec;  })
+    ({  typeof(self) _vec_vec = vec_new(typeof(*(self)), vec_len(self)); \
+        size_t _vec_i = 0;                                               \
+        for (; _vec_i < vec_len(self) && func((self)[_vec_i]); _vec_i++) _vec_vec[_vec_i] = (self)[_vec_i]; \
+        vec_len(_vec_vec) = _vec_i;                                       \
+        _vec_vec;  })
 #define vec_drop_while(self, func)                                      \
-    ({  typeof(self) VEC_vec = vec_new(typeof(*(self)), vec_len(self)); \
-        bool VEC_cond = true;                                           \
-        for (size_t VEC_i = 0; VEC_i < vec_len(self); VEC_i++)          \
-            if (VEC_cond && (VEC_cond = func((self)[VEC_i]))) continue; \
-            else vec_push(VEC_vec, ((self)[VEC_i]));                    \
-        VEC_vec;  })
+    ({  typeof(self) _vec_vec = vec_new(typeof(*(self)), vec_len(self)); \
+        bool _vec_cond = true;                                           \
+        for (size_t _vec_i = 0; _vec_i < vec_len(self); _vec_i++)          \
+            if (_vec_cond && (_vec_cond = func((self)[_vec_i]))) continue; \
+            else vec_push(_vec_vec, ((self)[_vec_i]));                    \
+        _vec_vec;  })
 #define vec_partition(self, func)                                       \
-    ({  typeof(self) VEC_arr[2] = {                                     \
+    ({  typeof(self) _vec_arr[2] = {                                     \
             vec_new(typeof(*(self)), vec_len(self)),                    \
             vec_new(typeof(*(self)), vec_len(self)) };                  \
-        ((uintptr_t) VEC_arr[0] & (uintptr_t) VEC_arr[1])               \
-            ? ({    bool VEC_ret;                                       \
-                    for (size_t VEC_i = 0; VEC_i < vec_len(self); VEC_i++) { \
-                        VEC_ret = func((self)[VEC_i]);                  \
-                        VEC_arr[VEC_ret][vec_len(VEC_arr[VEC_ret])++] = (self)[VEC_i]; \
+        ((uintptr_t) _vec_arr[0] & (uintptr_t) _vec_arr[1])               \
+            ? ({    bool _vec_ret;                                       \
+                    for (size_t _vec_i = 0; _vec_i < vec_len(self); _vec_i++) { \
+                        _vec_ret = func((self)[_vec_i]);                  \
+                        _vec_arr[_vec_ret][vec_len(_vec_arr[_vec_ret])++] = (self)[_vec_i]; \
                     }                                                   \
-                    vec_anew(VEC_arr); })                               \
+                    vec_anew(_vec_arr); })                               \
             : (vec_err(self) = VEC_ALLOC_ERR, NULL); })
 
 #define vec_flatten(self) // maybe it's possible to check for sub vectors by checking if the memory where the header would be is allocated
@@ -337,23 +337,23 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
 #define vec_search_by_key(self, target, key)                            \
     vec_search_body((self), _VEC_THREE_WAY_CMP(key(vec_i), (target)))
 #define vec_search_body(self, body)                                     \
-    ({  size_t VEC_i = vec_multi_search((self), vec_len(self), (body)); \
-        typeof(*(self)) vec_i = (self)[VEC_i];                          \
-        ((intmax_t) (body) == 0)? VEC_i : (vec_err(self) = VEC_TARGET_NOT_FOUND, SIZE_MAX);  })
+    ({  size_t _vec_i = vec_multi_search((self), vec_len(self), (body)); \
+        typeof(*(self)) vec_i = (self)[_vec_i];                          \
+        ((intmax_t) (body) == 0)? _vec_i : (vec_err(self) = VEC_TARGET_NOT_FOUND, SIZE_MAX);  })
 #define vec_multi_search_by(arr, len, func) vec_multi_search((arr), (len), func(vec_i))
 #define vec_multi_search(arr, len, body)                                \
-    ({  size_t VEC_idx[3] = { 0, 0, (len)-1 };                          \
+    ({  size_t _vec_idx[3] = { 0, 0, (len)-1 };                          \
         typeof(*(arr)) vec_i;                                           \
-        int VEC_ret;                                                    \
-        while (VEC_idx[0] <= VEC_idx[2]) {                              \
-            VEC_idx[1] = VEC_idx[0] + (VEC_idx[2] - VEC_idx[0]) / 2;    \
-            vec_i = (arr)[VEC_idx[1]];                                  \
-            VEC_ret = (body);                                           \
-            if (VEC_ret < 0) VEC_idx[0] = VEC_idx[1] + 1;               \
-            else if (VEC_ret > 0) VEC_idx[2] = VEC_idx[1] - 1;          \
+        int _vec_ret;                                                    \
+        while (_vec_idx[0] <= _vec_idx[2]) {                              \
+            _vec_idx[1] = _vec_idx[0] + (_vec_idx[2] - _vec_idx[0]) / 2;    \
+            vec_i = (arr)[_vec_idx[1]];                                  \
+            _vec_ret = (body);                                           \
+            if (_vec_ret < 0) _vec_idx[0] = _vec_idx[1] + 1;               \
+            else if (_vec_ret > 0) _vec_idx[2] = _vec_idx[1] - 1;          \
             else break;  }                                              \
-        do vec_i = (arr)[--(VEC_idx[1])]; while (VEC_idx[1] != SIZE_MAX && ((intmax_t) (body) == 0)); \
-        VEC_idx[1]+1;  })
+        do vec_i = (arr)[--(_vec_idx[1])]; while (_vec_idx[1] != SIZE_MAX && ((intmax_t) (body) == 0)); \
+        _vec_idx[1]+1;  })
 
 #define vec_sort(self) vec_sort_by((self), _VEC_LE)
 #define vec_sort_by(self, cmp)                      \
