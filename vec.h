@@ -99,7 +99,10 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
 #define vec_maxed(self) (vec_cap(self) == SIZE_MAX)
 
 #define _VEC_NEW(_0, _1, _2, fn, ...) fn
-#define vec_new(...) _VEC_NEW(_0, ##__VA_ARGS__, vec_with_capacity, vec_with_type, vec_empty_new)(__VA_ARGS__)
+#define vec_new(...) _VEC_NEW(_0, ##__VA_ARGS__,                        \
+                              vec_with_capacity(__VA_ARGS__),           \
+                              vec_with_capacity(__VA_ARGS__, VEC_INIT_CAP), \
+                              vec_with_capacity(struct {}, 0))
 #define vec_cnew vec_with_capacity
 #define vec_with_capacity(T, _cap)                                  \
     ({  vec_t *_vec = malloc(sizeof(vec_t) + sizeof(T) * (_cap));   \
@@ -108,9 +111,6 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
                _vec->cap = _cap,                                    \
                &_vec->items)                                        \
             : (perror(VEC_ALLOC_ERR_MSG), NULL); })
-#define vec_with_type(T) vec_with_capacity(T, VEC_INIT_CAP)
-#define vec_enew vec_empty_new
-#define vec_empty_new() vec_with_capacity(struct {}, 0)
 #define vec_mnew vec_multi_new
 #define vec_multi_new(arr, _len)                                        \
     ({  typeof(*(arr)) *_vec = vec_with_capacity(typeof(*(arr)), (_len)); \
