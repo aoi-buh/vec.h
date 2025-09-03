@@ -196,7 +196,7 @@ int main() {
                & vec_len(vec) == i
                & vec_cap(vec) == arr_len(arr));
     assert("vec_pop() negative test" &&
-           vec_pop(vec) == VEC_NO_ITEM_TO_POP
+           vec_pop(vec) == 0
            & vec_err(vec) == VEC_NO_ITEM_TO_POP
            & vec_len(vec) == 0
            & vec_cap(vec) == arr_len(arr));
