@@ -97,6 +97,7 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
 #define vec_free(self) free(_VEC_HEADER(self))
 #define vec_free_items(self) vec_foreach((self), vec_free)
 #define vec_maxed(self) (vec_cap(self) == SIZE_MAX)
+#define vec_as(self, type) ({  type *tmp = (type*) self; tmp;  })
 
 #define _VEC_NEW(_0, _1, _2, fn, ...) fn
 #define vec_new(...) _VEC_NEW(_0, ##__VA_ARGS__,                        \

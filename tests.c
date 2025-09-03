@@ -62,6 +62,14 @@ int main() {
         assert("vec_anew() element test" &&
                vec[i] == arr[i]);
 
+    {
+#define is_long(x) _Generic((x), long: 1, default: 0)
+        intptr_t _vec = (intptr_t) vec;
+        assert("vec_as() test" &&
+               is_long(*vec_as(vec, long)));
+#undef is_long
+    }
+
     _vec = vec_clone(vec);
     assert("vec_clone() test" &&
            vec_err(_vec) == 0
