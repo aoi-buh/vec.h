@@ -125,10 +125,10 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
 #define vec_array_new vec_from_array
 #define vec_from_array(arr) vec_generic_clone((arr), _VEC_ARR_LEN(arr))
 #define vec_zero(T, _cap)                                               \
-    ({  vec_t *_vec = calloc(1, sizeof(vec_t) + sizeof(T) * (_cap));    \
+    ({  T *_vec = vec_with_capacity(T, (_cap));                         \
         _vec                                                            \
-            ? (_vec->cap = _cap, _vec->len = _cap, &_vec->items)        \
-            : (perror(VEC_ALLOC_ERR_MSG), NULL); })
+            ? (memset(_vec, 0, sizeof(T) * (_cap)), vec_len(_vec) = (_cap), _vec) \
+            : (perror(VEC_ALLOC_ERR_MSG), NULL);  })
 #define vec_clone(self)                                                 \
     ({  vec_t *_vec = malloc(sizeof(vec_t) + sizeof(*(self)) * vec_cap(self)); \
         _vec                                                            \
