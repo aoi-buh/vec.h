@@ -104,6 +104,13 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
 #define vec_free_items(self) vec_foreach((self), vec_free)
 #define vec_maxed(self) (vec_cap(self) == SIZE_MAX)
 #define vec_as(self, type) ({  type *tmp = (type*) self; tmp;  })
+#define vec_debug(self)                                             \
+    fprintf(stderr,                                                 \
+            "vec: %lu\n"                                            \
+            "err: %d\n"                                             \
+            "len: %lu\n"                                            \
+            "cap: %lu\n",                                           \
+            (self), vec_err(self), vec_len(self), vec_cap(self))
 
 #define _VEC_NEW(_0, _1, _2, fn, ...) fn
 #define vec_new(...) _VEC_NEW(_0, ##__VA_ARGS__,                        \
