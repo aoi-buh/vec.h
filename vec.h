@@ -57,6 +57,12 @@ _VEC_ASSERT(VEC_INIT_CAP > 0 & VEC_INIT_CAP == (int)VEC_INIT_CAP,
 _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
             "VEC_EXPAND_FACTOR must be bigger than 1");
 
+/*
+  configurable variables
+*/
+#define VEC_MALLOC malloc
+#define VEC_REALLOC realloc
+
 
 /*
   error messages
@@ -105,16 +111,16 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
                               vec_with_capacity(__VA_ARGS__, VEC_INIT_CAP), \
                               vec_with_capacity(struct {}, 0))
 #define vec_cnew vec_with_capacity
-#define vec_with_capacity(T, _cap)                                  \
-    ({  vec_t *_vec = malloc(sizeof(vec_t) + sizeof(T) * (_cap));   \
-        _vec                                                        \
-            ? (memset(_vec, 0, sizeof(vec_t)),                      \
-               _vec->cap = _cap,                                    \
-               &_vec->items)                                        \
+#define vec_with_capacity(T, _cap)                                      \
+    ({  vec_t *_vec = VEC_MALLOC(sizeof(vec_t) + sizeof(T) * (_cap));   \
+        _vec                                                            \
+            ? (memset(_vec, 0, sizeof(vec_t)),                          \
+               _vec->cap = _cap,                                        \
+               &_vec->items)                                            \
             : (perror(VEC_ALLOC_ERR_MSG), NULL); })
 #define vec_gnew vec_generic_clone
 #define vec_gclone vec_generic_clone
-#define vec_generic_clone(arr, _len)                                        \
+#define vec_generic_clone(arr, _len)                                    \
     ({  typeof(*(arr)) *_vec = vec_with_capacity(typeof(*(arr)), (_len)); \
         _vec                                                            \
             ? (memcpy(_vec, (arr), sizeof(*(arr)) * (_len)),            \
@@ -130,7 +136,7 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
             ? (memset(_vec, 0, sizeof(T) * (_cap)), vec_len(_vec) = (_cap), _vec) \
             : (perror(VEC_ALLOC_ERR_MSG), NULL);  })
 #define vec_clone(self)                                                 \
-    ({  vec_t *_vec = malloc(sizeof(vec_t) + sizeof(*(self)) * vec_cap(self)); \
+    ({  vec_t *_vec = VEC_MALLOC(sizeof(vec_t) + sizeof(*(self)) * vec_cap(self)); \
         _vec                                                            \
             ? (memcpy(_vec, _VEC_HEADER(self), sizeof(vec_t) + sizeof(*(self)) * vec_len(self)), \
                &_vec->items)                                            \
@@ -142,8 +148,8 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
             : (n);                                                      \
         vec_t *_vec;                                                    \
         _n                                                              \
-            ? (_vec = realloc(_VEC_HEADER(self),                        \
-                              sizeof(vec_t) + sizeof(*(self)) * (vec_cap(self) + _n)), \
+            ? (_vec = VEC_REALLOC(_VEC_HEADER(self),                    \
+                                  sizeof(vec_t) + sizeof(*(self)) * (vec_cap(self) + _n)), \
                _vec                                                     \
                ? (_vec->cap += _n, ((self) = (typeof(self)) &_vec->items), true) \
                : (vec_err(self) = VEC_RESIZE_ERR, false))               \
@@ -157,7 +163,7 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
 
 #define vec_shrink_to(self, n)                                          \
     (vec_cap(self) > vec_len(self) + (n)                                \
-     && ({   vec_t *_vec = realloc(_VEC_HEADER(self),                   \
+     && ({   vec_t *_vec = VEC_REALLOC(_VEC_HEADER(self),               \
                  sizeof(vec_t) + sizeof(*(self)) * (vec_len(self) + (n))); \
              _vec                                                       \
                  ? (_vec->cap = vec_len(self) + (n), true)              \
@@ -214,14 +220,14 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
 
 // array append and insert both assume typeof(self[0]) == typeof(arr[0])
 #define vec_gappend vec_generic_append
-#define vec_generic_append(self, arr, len)                                \
+#define vec_generic_append(self, arr, len)                              \
     ((len)                                                              \
      && _VEC_IF_REALLOC(vec_len(self) + (len) > vec_cap(self),          \
                         vec_reserve((self), (len)),                     \
                         (memcpy((self)+vec_len(self), (arr), sizeof(*(self)) * (len)), \
                          vec_len(self) += (len))))
-#define vec_append(self, other)                         \
-    (vec_generic_append((self), (other), vec_len(other))  \
+#define vec_append(self, other)                             \
+    (vec_generic_append((self), (other), vec_len(other))    \
      && (vec_len(other) = 0, vec_len(self)))
 #define vec_aappend vec_array_append
 #define vec_array_append(self, arr) vec_generic_append((self), (arr), _VEC_ARR_LEN(arr))
@@ -235,7 +241,7 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
                         vec_len(self)++))                               \
      : (vec_err(self) = VEC_INDEX_OUT_OF_BOUNDS), false)
 #define vec_ginsert vec_generic_insert
-#define vec_generic_insert(self, i , arr, len)                            \
+#define vec_generic_insert(self, i , arr, len)                          \
     (_VEC_VALID_INDEX((self), (i))                                      \
      ? _VEC_IF_REALLOC(vec_len(self) + (len) > vec_cap(self),           \
                        vec_reserve((self), (len)),                      \
@@ -343,7 +349,7 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
         typeof(*(self)) vec_i = (self)[_vec_i];                         \
         ((intmax_t) (body) == 0)? _vec_i : (vec_err(self) = VEC_TARGET_NOT_FOUND, SIZE_MAX);  })
 #define vec_generic_search_by(arr, len, func) vec_generic_search((arr), (len), func(vec_i))
-#define vec_generic_search(arr, len, body)                                \
+#define vec_generic_search(arr, len, body)                              \
     ({  size_t _vec_idx[3] = { 0, 0, (len)-1 };                         \
         typeof(*(arr)) vec_i;                                           \
         int _vec_ret;                                                   \
@@ -358,10 +364,10 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
         _vec_idx[1]+1;  })
 
 #define vec_sort(self) vec_sort_by((self), _VEC_LE)
-#define vec_sort_by(self, cmp)                      \
-    (vec_generic_sort_by((self), vec_len(self), cmp)  \
+#define vec_sort_by(self, cmp)                          \
+    (vec_generic_sort_by((self), vec_len(self), cmp)    \
      || (vec_err(self) = VEC_ALLOC_ERR, false))
-#define vec_generic_sort_by(arr, len, cmp)                                \
+#define vec_generic_sort_by(arr, len, cmp)                              \
     ({  bool ok = false;                                                \
         typeof(arr) tmp = vec_with_capacity(typeof(*(arr)), (len));     \
         if (tmp) {                                                      \
@@ -388,10 +394,10 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
             ok = true;                                                  \
         } ok; })
 #define vec_sort_by_key(self, key) vec_msort((self), _VEC_LE, key)
-#define vec_msort(self, cmp, key)                           \
-    (vec_generic_sort_by_key((self), vec_len(self), cmp, key) \
+#define vec_msort(self, cmp, key)                               \
+    (vec_generic_sort_by_key((self), vec_len(self), cmp, key)   \
      || (vec_err(self) = VEC_ALLOC_ERR, false))
-#define vec_generic_sort_by_key(arr, len, cmp, key)                       \
+#define vec_generic_sort_by_key(arr, len, cmp, key)                     \
     ({  bool success = false;                                           \
         typeof(arr) tmp = vec_with_capacity(typeof(*(arr)), (len));     \
         typeof(key(*(arr)))                                             \
@@ -437,10 +443,10 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
         success; })
 
 #define vec_sort_unstable(self) vec_sort_unstable_by((self), _VEC_LE)
-#define vec_sort_unstable_by(self, cmp)                     \
-    (vec_generic_sort_unstable_by((self), vec_len(self), cmp) \
+#define vec_sort_unstable_by(self, cmp)                         \
+    (vec_generic_sort_unstable_by((self), vec_len(self), cmp)   \
      || (vec_err(self) = VEC_ALLOC_ERR, false))
-#define vec_generic_sort_unstable_by(arr, len, cmp)                       \
+#define vec_generic_sort_unstable_by(arr, len, cmp)                     \
     ({  bool success = false;                                           \
         if ((len) > 1) {                                                \
             size_t *stack = vec_with_capacity(size_t, ceil(log2(len)) * 2 * 5); \
@@ -480,9 +486,9 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
         } success; })
 #define vec_sort_unstable_by_key(self, key) vec_qsort((self), _VEC_LE, key)
 #define vec_qsort(self, cmp, key)                                       \
-    (vec_generic_sort_unstable_by_key((self), vec_len(self), cmp, key)    \
+    (vec_generic_sort_unstable_by_key((self), vec_len(self), cmp, key)  \
      || (vec_err(self) = VEC_ALLOC_ERR, false))
-#define vec_generic_sort_unstable_by_key(arr, len, cmp, key)              \
+#define vec_generic_sort_unstable_by_key(arr, len, cmp, key)            \
     ({  bool success = false;                                           \
         if ((len) > 1) {                                                \
             size_t *stack = vec_with_capacity(size_t, ceil(log2(len)) * 2 * 5); \
