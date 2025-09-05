@@ -211,8 +211,8 @@ int main() {
     vec_free(vec);
 
     fill_random(arr);
-    vec = vec_mnew(arr, arr_len(arr)/2);
-    _vec = vec_mnew(arr+arr_len(arr)/2, arr_len(arr)/2);
+    vec = vec_gclone(arr, arr_len(arr)/2);
+    _vec = vec_gclone(arr+arr_len(arr)/2, arr_len(arr)/2);
     assert("vec_apppend() test" &&
            vec_append(vec, _vec)
            & vec_err(vec) == 0
