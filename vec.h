@@ -182,7 +182,11 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
 #define vec_get(self, i)                                                \
     ((intmax_t)(i) < 0? _VEC_GET((self), vec_len(self)+(i)) : _VEC_GET((self), (i)))
 #define _VEC_GET(self, i)                                               \
-    (_VEC_VALID_INDEX((self), (i))? (self)[i] : (vec_err(self) = VEC_INDEX_OUT_OF_BOUNDS, 0))
+    (_VEC_VALID_INDEX((self), (i))                                      \
+     ? ((self)+(i))                                                     \
+     : (vec_err(self) = VEC_INDEX_OUT_OF_BOUNDS, (typeof(*(self))*) NULL))
+/* ((_VEC_VALID_INDEX((self), (i)) || (vec_err(self) = VEC_INDEX_OUT_OF_BOUNDS)), (self)[i]) */
+/* (_VEC_VALID_INDEX((self), (i))? (self)[i] : (vec_err(self) = VEC_INDEX_OUT_OF_BOUNDS, (self)[0])) */
 
 #define vec_reverse(self)                                           \
     ({  typeof(*(self)) _item;                                      \

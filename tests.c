@@ -133,15 +133,15 @@ int main() {
     vec = vec_anew(arr);
     fori (i, vec_len(vec))
         assert("vec_get() positive index test" &&
-               vec_get(vec, i) == arr[i]);
+               *vec_get(vec, i) == arr[i]);
     for (size_t i = 1; i < arr_len(arr)-1; i++)
         assert("vec_get() negative index test" &&
-               vec_get(vec, -i) == arr[arr_len(arr) - i]
+               *vec_get(vec, -i) == arr[arr_len(arr) - i]
                & vec_err(vec) == NONE);
     assert("vec_get() negative test" &&
-           vec_get(vec, -arr_len(arr) - 1) == 0
+           vec_get(vec, -arr_len(arr) - 1) == NULL
            & vec_err(vec) == VEC_INDEX_OUT_OF_BOUNDS
-           & vec_get(vec, arr_len(arr)) == 0
+           & vec_get(vec, arr_len(arr)) == NULL
            & vec_err(vec) == VEC_INDEX_OUT_OF_BOUNDS);
     vec_free(vec);
 
