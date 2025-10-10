@@ -74,7 +74,7 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
   internal functions
 */
 // non vec functions
-#define _VEC_ARR_LEN(...) (sizeof(__VA_ARGS__)/sizeof(*(__VA_ARGS__)))
+#define _VEC_ARR_LEN(arr) (sizeof(arr)/sizeof(*(arr)))
 #define _VEC_IF_REALLOC(cond1, cond2, expr) ((cond1)? ((cond2) && ((expr), true)) : ((expr), true))
 #define _VEC_UNWRAP(x) x
 #define _VEC_LE(a, b) ((a) <= (b))
