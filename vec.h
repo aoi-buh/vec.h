@@ -94,6 +94,12 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
 
 
 /*
+  vector type macro
+*/
+#define vec(T) ((T)*)
+
+
+/*
   external functions
 */
 #define vec_err(self) (_VEC_HEADER(self)->err)
