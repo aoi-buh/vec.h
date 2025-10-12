@@ -109,6 +109,8 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
 #define vec_free(self) free(_VEC_HEADER(self))
 #define vec_free_items(self) vec_foreach((self), vec_free)
 #define vec_maxed(self) (vec_cap(self) == SIZE_MAX)
+#define vec_arg(self) (self), vec_len(self)
+#define vec_arg3(self) (self), vec_len(self), sizeof(*(self))
 #define vec_as(self, type) ({  type *tmp = (type*) self; tmp;  })
 #define vec_debug(self)                                             \
     fprintf(stderr,                                                 \
