@@ -102,16 +102,29 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
 /*
   external functions
 */
+// enum vec_err vec_err(vec(T))
 #define vec_err(self) (_VEC_HEADER(self)->err)
+// size_t vec_len(vec(T))
 #define vec_len(self) (_VEC_HEADER(self)->len)
+// size_t vec_cap(vec(T))
 #define vec_cap(self) (_VEC_HEADER(self)->cap)
+// bool vec_is_empty(vec(T))
 #define vec_is_empty(self) (vec_len(self) == 0)
+// void vec_free(vec(T))
 #define vec_free(self) free(_VEC_HEADER(self))
+// void vec_free_items(vec(T))
 #define vec_free_items(self) vec_foreach((self), vec_free)
+// bool vec_maxed(vec(T))
 #define vec_maxed(self) (vec_cap(self) == SIZE_MAX)
-#define vec_arg(self) (self), vec_len(self)
-#define vec_arg3(self) (self), vec_len(self), sizeof(*(self))
+// vec(T), size_t vec_args(vec(T))
+#define vec_args(self) (self), vec_len(self)
+#define vec_arg vec_args
+// vec(T), size_t, size_t vec_args3(vec(T))
+#define vec_args3(self) (self), vec_len(self), sizeof(*(self))
+#define vec_arg3 vec_args3
+// B vec_as(vec(T), B)
 #define vec_as(self, type) ({  type *tmp = (type*) self; tmp;  })
+// void vec_debug(vec(T))
 #define vec_debug(self)                                             \
     fprintf(stderr,                                                 \
             "vec: %lu\n"                                            \
@@ -121,6 +134,7 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
             (self), vec_err(self), vec_len(self), vec_cap(self))
 
 #define _VEC_NEW(_0, _1, _2, fn, ...) fn
+// vec(T) vec_new(T?, size_t?)
 #define vec_new(...) _VEC_NEW(_0, ##__VA_ARGS__,                        \
                               vec_with_capacity(__VA_ARGS__),           \
                               vec_with_capacity(__VA_ARGS__, VEC_INIT_CAP), \
@@ -133,6 +147,7 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
                _vec->cap = _cap,                                        \
                &_vec->items)                                            \
             : (perror(VEC_ALLOC_ERR_MSG), NULL); })
+// vec(T) vec_generic_clone(T*, size_t)
 #define vec_gnew vec_generic_clone
 #define vec_gclone vec_generic_clone
 #define vec_generic_clone(arr, _len)                                    \
@@ -142,14 +157,17 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
                vec_len(_vec) = (_len),                                  \
                _vec)                                                    \
             : NULL;  })
+// vec(T) vec_from_array(T[n])
 #define vec_anew vec_array_new
 #define vec_array_new vec_from_array
 #define vec_from_array(arr) vec_generic_clone((arr), _VEC_ARR_LEN(arr))
+// vec(T) vec_zero(T, size_t)
 #define vec_zero(T, _cap)                                               \
     ({  T *_vec = vec_with_capacity(T, (_cap));                         \
         _vec                                                            \
             ? (memset(_vec, 0, sizeof(T) * (_cap)), vec_len(_vec) = (_cap), _vec) \
             : (perror(VEC_ALLOC_ERR_MSG), NULL);  })
+// vec(T) vec_clone(vec(T))
 #define vec_clone(self)                                                 \
     ({  vec_t *_vec = VEC_MALLOC(sizeof(vec_t) + sizeof(*(self)) * vec_cap(self)); \
         _vec                                                            \
@@ -157,6 +175,7 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
                &_vec->items)                                            \
             : (vec_err(self) = VEC_ALLOC_ERR, perror(VEC_ALLOC_ERR_MSG), NULL); })
 
+// bool vec_reserve_exact(vec(T), size_t)
 #define vec_reserve_exact(self, n)                                      \
     ({  size_t _n = (vec_cap(self) > SIZE_MAX - (n))                    \
             ? SIZE_MAX - vec_cap(self)                                  \
@@ -169,6 +188,7 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
                ? (_vec->cap += _n, ((self) = (typeof(self)) &_vec->items), true) \
                : (vec_err(self) = VEC_RESIZE_ERR, false))               \
             : true; })
+// bool vec_reserve(vec(T), size_t)
 #define vec_reserve(self, n)                                            \
     ({  size_t factor = VEC_EXPAND_FACTOR;                              \
         (vec_cap(self) == 0) && (vec_cap(self) = VEC_INIT_CAP);         \
@@ -176,6 +196,7 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
         vec_reserve_exact((self),                                       \
                           vec_cap(self) * (factor - 1));  })
 
+// bool vec_shrink_to(vec(T), size_t)
 #define vec_shrink_to(self, n)                                          \
     (vec_cap(self) > vec_len(self) + (n)                                \
      && ({   vec_t *_vec = VEC_REALLOC(_VEC_HEADER(self),               \
@@ -183,19 +204,21 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
              _vec                                                       \
                  ? (_vec->cap = vec_len(self) + (n), true)              \
                  : (vec_err(self) = VEC_RESIZE_ERR, false);  }))
+// bool vec_shrink_to_fit(vec(T))
 #define vec_shrink_to_fit(self) vec_shrink_to((self), 0)
 
-#define vec_truncate(self, n) (vec_len(self) >= (n) && (vec_len(self) = (n)))
+// void vec_truncate(vec(T), size_t)
+#define vec_truncate(self, n) ({ if (vec_len(self) >= (n)) vec_len(self) = (n); })
 
+// T* vec_get(vec(T), size_t)
 #define vec_get(self, i)                                                \
     ((intmax_t)(i) < 0? _VEC_GET((self), vec_len(self)+(i)) : _VEC_GET((self), (i)))
 #define _VEC_GET(self, i)                                               \
     (_VEC_VALID_INDEX((self), (i))                                      \
      ? ((self)+(i))                                                     \
      : (vec_err(self) = VEC_INDEX_OUT_OF_BOUNDS, (typeof(*(self))*) NULL))
-/* ((_VEC_VALID_INDEX((self), (i)) || (vec_err(self) = VEC_INDEX_OUT_OF_BOUNDS)), (self)[i]) */
-/* (_VEC_VALID_INDEX((self), (i))? (self)[i] : (vec_err(self) = VEC_INDEX_OUT_OF_BOUNDS, (self)[0])) */
 
+// void vec_reverse(vec(T))
 #define vec_reverse(self)                                           \
     ({  typeof(*(self)) _item;                                      \
         for (size_t i = 0, j = vec_len(self)-1; i < j; i++, j--) {  \
@@ -203,17 +226,19 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
             (self)[i] = (self)[j];                                  \
             (self)[j] = _item;  }})
 
-#define _VEC_REMOVE(self, i, body)                      \
-    ((i) != vec_len(self)-1                             \
-     ? (_VEC_VALID_INDEX((self), (i))                   \
-        ? (body)                                        \
-        : (vec_err(self) = VEC_INDEX_OUT_OF_BOUNDS), 0) \
+#define _VEC_REMOVE(self, i, body)                                      \
+    ((i) != vec_len(self)-1                                             \
+     ? (_VEC_VALID_INDEX((self), (i))                                   \
+        ? (body)                                                        \
+        : (vec_err(self) = VEC_INDEX_OUT_OF_BOUNDS), (typeof(*(self))) {0}) \
      : (self)[--vec_len(self)])
+// T vec_swap_remove(vec(T), size_t)
 #define vec_swap_remove(self, i)                            \
     _VEC_REMOVE((self), (i),                                \
                 ({  typeof(*(self)) _item = (self)[i];      \
                     (self)[i] = (self)[--vec_len(self)];    \
                     _item;  }))
+// T vec_remove(vec(T), size_t)
 #define vec_remove(self, i)                                             \
     _VEC_REMOVE((self), (i),                                            \
                 ({  typeof(*(self)) _item = (self)[i];                  \
@@ -221,23 +246,28 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
                     vec_len(self)--;                                    \
                     _item;  }))
 
+// void vec_retain(vec(T), fn)
 #define vec_retain(self, f)                         \
     ({  size_t j = 0;                               \
         for (size_t i = 0; i < vec_len(self); i++)  \
             if (f(((self)[i])))                     \
                 (self)[j++] = (self)[i];            \
-        vec_len(vec) = j;  })
+        vec_len(vec) = j;                           \
+        if (0);  })
 
+// bool vec_push(vec(T), T)
 #define vec_push(self, item)                            \
     _VEC_IF_REALLOC(vec_len(self)+1 > vec_cap(self),    \
                     vec_reserve((self), 1),             \
                     (self)[vec_len(self)++] = item)
+// T vec_pop(vec(T))
 #define vec_pop(self)                                               \
     (vec_len(self)                                                  \
      ? (self)[--vec_len(self)]                                      \
      : (vec_err(self) = VEC_NO_ITEM_TO_POP, (typeof(*(self))) 0))
 
 // array append and insert both assume typeof(self[0]) == typeof(arr[0])
+// bool vec_generic_append(vec(T), T*, size_t)
 #define vec_gappend vec_generic_append
 #define vec_generic_append(self, arr, len)                              \
     ((len)                                                              \
@@ -245,12 +275,15 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
                         vec_reserve((self), (len)),                     \
                         (memcpy((self)+vec_len(self), (arr), sizeof(*(self)) * (len)), \
                          vec_len(self) += (len))))
-#define vec_append(self, other)                             \
+// bool vec_append(vec(T), vec(T))
+#define vec_append(self, other)                     \
     (vec_generic_append((self), (other), vec_len(other))    \
      && (vec_len(other) = 0, vec_len(self)))
+// bool vec_array_append(vec(T), T[n])
 #define vec_aappend vec_array_append
 #define vec_array_append(self, arr) vec_generic_append((self), (arr), _VEC_ARR_LEN(arr))
 
+// bool vec_insert(vec(T), size_t, T)
 #define vec_insert(self, i, item)                                       \
     (_VEC_VALID_INDEX((self), (i))                                      \
      ? _VEC_IF_REALLOC(vec_len(self)+1 > vec_cap(self),                 \
@@ -259,8 +292,9 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
                         (self)[i] = item,                               \
                         vec_len(self)++))                               \
      : (vec_err(self) = VEC_INDEX_OUT_OF_BOUNDS), false)
+// bool vec_generic_insert(vec(T), size_t, T*, size_t)
 #define vec_ginsert vec_generic_insert
-#define vec_generic_insert(self, i , arr, len)                          \
+#define vec_generic_insert(self, i, arr, len)                          \
     (_VEC_VALID_INDEX((self), (i))                                      \
      ? _VEC_IF_REALLOC(vec_len(self) + (len) > vec_cap(self),           \
                        vec_reserve((self), (len)),                      \
@@ -268,13 +302,17 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
                         memcpy((self)+(i), (arr), sizeof(*(self)) * (len)), \
                         vec_len(self) += (len)))                        \
      : (vec_err(self) = VEC_INDEX_OUT_OF_BOUNDS), false)
+// bool vec_array_insert(vec(T), size_t, T[n])
 #define vec_ainsert vec_array_insert
 #define vec_array_insert(self, i, arr) vec_generic_insert((self), (i), (arr), _VEC_ARR_LEN(arr))
+// bool vec_vector_insert(vec(T), size_t, vec(T))
 #define vec_vinsert vec_vector_insert
 #define vec_vector_insert(self, i, other) vec_generic_insert((self), (i), (other), vec_len(other))
 
-#define vec_clear(self) (vec_len(self) = 0)
+// void vec_clear(vec(T))
+#define vec_clear(self) ({ vec_len(self) = 0; if(0); })
 
+// vec(T) vec_reversed(vec(T))
 #define vec_reversed(self)                                              \
     ({  typeof(self) _vec = vec_with_capacity(typeof(*(self)), vec_len(self)); \
         _vec                                                            \
@@ -282,6 +320,7 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
                     vec_len(_vec) = vec_len(self);                      \
                     _vec;  })                                           \
             : NULL;  })
+// vec(typeof(fn(T))) vec_map(vec(T), fn)
 #define vec_map(self, func)                                             \
     ({  typeof(func(*(self))) *_vec_vec = vec_with_capacity(typeof(func(*(self))), vec_len(self)); \
         _vec_vec                                                        \
@@ -290,6 +329,7 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
                     vec_len(_vec_vec) = vec_len(self);                  \
                     _vec_vec; })                                        \
             : NULL;  })
+// vec(T) vec_filter(vec(T), fn)
 #define vec_filter(self, func)                                          \
     ({  typeof(self) _vec_vec = vec_with_capacity(typeof(*(self)), vec_len(self)); \
         _vec_vec                                                        \
@@ -297,12 +337,15 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
                         if (func((self)[_vec_i])) _vec_vec[j++] = (self)[_vec_i]; \
                     _vec_vec; })                                        \
             : NULL;  })
+// typeof(fn(T)) vec_reduce(vec(T), fn, typeof(fn(T)))
 #define vec_reduce(self, func, init)                                    \
     ({  __auto_type _vec_acc = init;                                    \
         for (size_t _vec_i = 0; _vec_i < vec_len(self); _vec_i++) _vec_acc = func(_vec_acc, (self)[_vec_i]); \
         _vec_acc;  })
+// void vec_foreach(vec(T), fn)
 #define vec_foreach(self, func)                                         \
     ({  for (size_t _vec_i = 0; _vec_i < vec_len(self); _vec_i++) func((self)[_vec_i]);  })
+// size_t vec_find(vec(T), fn)
 #define vec_find(self, func)                                            \
     ({  size_t _vec_i = 0;                                              \
         bool _vec_found = false;                                        \
@@ -310,11 +353,13 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
         _vec_found                                                      \
             ? _vec_i                                                    \
             : ((vec_err(self) = VEC_TARGET_NOT_FOUND), SIZE_MAX);  })
+// bool vec_any(vec(T), fn)
 #define vec_any(self, func)                                             \
     ({  bool _vec_any = false;                                          \
         for (size_t _vec_i = 0; !_vec_any & _vec_i < vec_len(self); _vec_i++) \
             _vec_any = func((self)[_vec_i]);                            \
         _vec_any;  })
+// bool vec_all(vec(T), fn)
 #define vec_all(self, func)                                             \
     ({  bool _vec_all = true;                                           \
         for (size_t _vec_i = 0; _vec_all & _vec_i < vec_len(self); _vec_i++) \
@@ -325,14 +370,18 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
 #define vec_zip(self, other)
 #define vec_unzip(self)
 
+// vec(T) vec_take(vec(T), size_t)
 #define vec_take(self, n) vec_generic_clone(self, n)
+// vec(T) vec_drop(vec(T), size_t)
 #define vec_drop(self, n) vec_generic_clone((self)+(n), vec_len(self)-(n))
+// vec(T) vec_take_while(vec(T), fn)
 #define vec_take_while(self, func)                                      \
     ({  typeof(self) _vec_vec = vec_new(typeof(*(self)), vec_len(self)); \
         size_t _vec_i = 0;                                              \
         for (; _vec_i < vec_len(self) && func((self)[_vec_i]); _vec_i++) _vec_vec[_vec_i] = (self)[_vec_i]; \
         vec_len(_vec_vec) = _vec_i;                                     \
         _vec_vec;  })
+// vec(T) vec_drop_while(vec(T), fn)
 #define vec_drop_while(self, func)                                      \
     ({  typeof(self) _vec_vec = vec_new(typeof(*(self)), vec_len(self)); \
         bool _vec_cond = true;                                          \
@@ -340,6 +389,7 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
             if (_vec_cond && (_vec_cond = func((self)[_vec_i]))) continue; \
             else vec_push(_vec_vec, ((self)[_vec_i]));                  \
         _vec_vec;  })
+// vec(vec(T)) vec_partition(vec(T), fn)
 #define vec_partition(self, func)                                       \
     ({  typeof(self) _vec_arr[2] = {                                    \
             vec_new(typeof(*(self)), vec_len(self)),                    \
@@ -359,14 +409,18 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
     ({  __auto_type _a = a;                     \
         __auto_type _b = b;                     \
         (_a > _b) - (_a < _b);  })
+// size_t vec_search(vec(T), T)
 #define vec_search(self, target) vec_search_body((self), _VEC_THREE_WAY_CMP(vec_i, (target)))
+// size_t vec_search_by(vec(T), fn)
 #define vec_search_by(self, func) vec_search_body((self), func(vec_i))
+// size_t vec_search_by_key(vec(T), T, fn)
 #define vec_search_by_key(self, target, key)                            \
     vec_search_body((self), _VEC_THREE_WAY_CMP(key(vec_i), (target)))
 #define vec_search_body(self, body)                                     \
     ({  size_t _vec_i = vec_generic_search((self), vec_len(self), (body)); \
         typeof(*(self)) vec_i = (self)[_vec_i];                         \
         ((intmax_t) (body) == 0)? _vec_i : (vec_err(self) = VEC_TARGET_NOT_FOUND, SIZE_MAX);  })
+// size_t vec_generic_search_by(T*, size_t, fn)
 #define vec_generic_search_by(arr, len, func) vec_generic_search((arr), (len), func(vec_i))
 #define vec_generic_search(arr, len, body)                              \
     ({  size_t _vec_idx[3] = { 0, 0, (len)-1 };                         \
@@ -382,10 +436,13 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
         do vec_i = (arr)[--(_vec_idx[1])]; while (_vec_idx[1] != SIZE_MAX && ((intmax_t) (body) == 0)); \
         _vec_idx[1]+1;  })
 
+// bool vec_sort(vec(T))
 #define vec_sort(self) vec_sort_by((self), _VEC_LE)
+// bool vec_sort_by(vec(T), fn)
 #define vec_sort_by(self, cmp)                          \
     (vec_generic_sort_by((self), vec_len(self), cmp)    \
      || (vec_err(self) = VEC_ALLOC_ERR, false))
+// bool vec_generic_sort_by(T*, size_t, fn)
 #define vec_generic_sort_by(arr, len, cmp)                              \
     ({  bool ok = false;                                                \
         typeof(arr) tmp = vec_with_capacity(typeof(*(arr)), (len));     \
@@ -412,10 +469,13 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
             vec_free(tmp);                                              \
             ok = true;                                                  \
         } ok; })
+// bool vec_sort_by_key(vec(T), fn)
 #define vec_sort_by_key(self, key) vec_msort((self), _VEC_LE, key)
+// bool vec_msort(vec(T), fn, fn)
 #define vec_msort(self, cmp, key)                               \
     (vec_generic_sort_by_key((self), vec_len(self), cmp, key)   \
      || (vec_err(self) = VEC_ALLOC_ERR, false))
+// bool vec_generic_sort_by_key(T*, size_t, fn, fn)
 #define vec_generic_sort_by_key(arr, len, cmp, key)                     \
     ({  bool success = false;                                           \
         typeof(arr) tmp = vec_with_capacity(typeof(*(arr)), (len));     \
@@ -461,10 +521,13 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
         if (key2) vec_free(key2);                                       \
         success; })
 
+// bool vec_sort_unstable(vec(T))
 #define vec_sort_unstable(self) vec_sort_unstable_by((self), _VEC_LE)
+// bool vec_sort_unstable_by(vec(T), fn)
 #define vec_sort_unstable_by(self, cmp)                         \
     (vec_generic_sort_unstable_by((self), vec_len(self), cmp)   \
      || (vec_err(self) = VEC_ALLOC_ERR, false))
+// bool vec_sort_unstable_by(T*, size_t, fn)
 #define vec_generic_sort_unstable_by(arr, len, cmp)                     \
     ({  bool success = false;                                           \
         if ((len) > 1) {                                                \
@@ -503,10 +566,13 @@ _VEC_ASSERT(VEC_EXPAND_FACTOR > 1,
                 success = true;                                         \
             }                                                           \
         } success; })
+// bool vec_sort_unstable_by_key(vec(T), fn)
 #define vec_sort_unstable_by_key(self, key) vec_qsort((self), _VEC_LE, key)
+// bool vec_qsort(vec(T), fn, fn)
 #define vec_qsort(self, cmp, key)                                       \
     (vec_generic_sort_unstable_by_key((self), vec_len(self), cmp, key)  \
      || (vec_err(self) = VEC_ALLOC_ERR, false))
+// bool vec_generic_sort_unstable_by_key(T*, size_t, fn, fn)
 #define vec_generic_sort_unstable_by_key(arr, len, cmp, key)            \
     ({  bool success = false;                                           \
         if ((len) > 1) {                                                \
